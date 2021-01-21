@@ -1,0 +1,548 @@
+
+
+########################################
+methods<-4*3+1
+
+seed<-round(runif(1)*100000,0)
+set.seed(seed)
+
+constant1<-1/2
+constant2<-1
+constant3<-2
+
+comp10<-NULL
+comp20<-NULL
+
+comp1a<-NULL
+comp2a<-NULL
+naive1a<-NULL
+naive2a<-NULL
+mia1a<-NULL
+mia2a<-NULL
+rdd1a<-NULL
+rdd2a<-NULL
+
+comp1b<-NULL
+comp2b<-NULL
+naive1b<-NULL
+naive2b<-NULL
+mia1b<-NULL
+mia2b<-NULL
+rdd1b<-NULL
+rdd2b<-NULL
+
+comp1c<-NULL
+comp2c<-NULL
+naive1c<-NULL
+naive2c<-NULL
+mia1c<-NULL
+mia2c<-NULL
+rdd1c<-NULL
+rdd2c<-NULL
+
+compn0<-NULL
+compna<-NULL
+compnb<-NULL
+compnc<-NULL
+
+dfna<-NULL
+dfnb<-NULL
+dfnc<-NULL
+
+MIna<-NULL
+MInb<-NULL
+MInc<-NULL
+
+############################################
+#Population
+N<-10000000
+
+z1<-rbeta(N, 2, 4, ncp = 0)
+x1<-2*z1-1
+e1<-rnorm(N,0,0.1295)
+
+cut<-round(as.numeric(quantile(x1,cutt)),4)
+d<-NULL
+d[x1<cut]<-0
+d[x1>=cut]<-1
+
+y0t<-0.48+1.27*x1-0.5*7.18*x1^2+0.7*20.21*x1^3+1.1*21.54*x1^4+1.5*7.33*x1^5+e1
+y1t<-0.52+0.84*x1-0.1*3.00*x1^2-0.3*7.99*x1^3-0.1*9.01*x1^4+3.56*x1^5+e1
+data01<-data.frame(y0t,y1t,x1,d)
+
+y0<-NULL
+y0[d==0]<-y0t[d==0]
+y1<-NULL
+y1[d==1]<-y1t[d==1]
+data02<-data.frame(y0,y1,x1)
+
+y3<-NULL
+y3[d==0]<-y0[d==0]
+y3[d==1]<-y1[d==1]
+data03<-data.frame(y3,x1,d)
+
+dataLATE<-data.frame(y0t,y1t,x1)
+h<-sd(x1)/1000
+data1LATE<-dataLATE[(cut-h<=x1)&(x1<=cut+h),]
+late<-mean(data1LATE$y1t-data1LATE$y0t)
+lsd<-sd(data1LATE$y1t-data1LATE$y0t)
+
+x1<-cut
+y0t<-0.48+1.27*x1-0.5*7.18*x1^2+0.7*20.21*x1^3+1.1*21.54*x1^4+1.5*7.33*x1^5
+y1t<-0.52+0.84*x1-0.1*3.00*x1^2-0.3*7.99*x1^3-0.1*9.01*x1^4+3.56*x1^5
+late<-y1t-y0t
+
+#########
+#Non-Parametric Bootstrapping
+
+sampleframe1<-matrix(NA,n1,s)
+
+for(j in 1:s){
+ sampleframe1[,j]<-sample(nrow(data01), n1, replace=FALSE)
+}
+data1b<-as.list(rep(NA, 1))
+
+#########
+#Simulation start
+for (j in 1:s) {
+data1b[[j]]<-as.matrix(data01[sampleframe1[, j], ])
+data1<-data.frame(data1b[[j]])
+
+y0<-NULL
+y0[data1$d==0]<-data1$y0t[data1$d==0]
+y1<-NULL
+y1[data1$d==1]<-data1$y1t[data1$d==1]
+x1<-data1$x1
+d<-data1$d
+data2b<-data.frame(y0,y1,x1,d)
+
+y3<-NULL
+y3[data2b$d==0]<-y0[data2b$d==0]
+y3[data2b$d==1]<-y1[data2b$d==1]
+data3<-data.frame(y3,x1,d)
+
+data2<-data.frame(y0,y1,x1)
+
+######################
+#Bandwidth Selection
+#mean(y1,na.rm=TRUE)-mean(y0,na.rm=TRUE)
+rbdMI<-rdbwselect(data3$y3,data3$x1,c=cut,bwselect=bw)
+hMI1a<-rbdMI$bws[1]*constant1
+hMI2a<-rbdMI$bws[1]*constant2
+hMI3a<-rbdMI$bws[1]*constant3
+
+hMI1b<-rbdMI$bws[2]*constant1
+hMI2b<-rbdMI$bws[2]*constant2
+hMI3b<-rbdMI$bws[2]*constant3
+
+data3a<-data3[(cut-hMI1a<=(data3$x1))&((data3$x1)<=cut+hMI1b),]
+data3b<-data3[(cut-hMI2a<=(data3$x1))&((data3$x1)<=cut+hMI2b),]
+data3c<-data3[(cut-hMI3a<=(data3$x1))&((data3$x1)<=cut+hMI3b),]
+
+data2a<-data2[(cut-hMI1a<=(data1$x1))&((data1$x1)<=cut+hMI1b),]
+data2b<-data2[(cut-hMI2a<=(data1$x1))&((data1$x1)<=cut+hMI2b),]
+data2c<-data2[(cut-hMI3a<=(data1$x1))&((data1$x1)<=cut+hMI3b),]
+
+data11a<-data1[(cut-hMI1a<=(data1$x1))&((data1$x1)<=cut+hMI1b),]
+data11b<-data1[(cut-hMI2a<=(data1$x1))&((data1$x1)<=cut+hMI2b),]
+data11c<-data1[(cut-hMI3a<=(data1$x1))&((data1$x1)<=cut+hMI3b),]
+
+compna[j]<-nrow(data3a)
+compnb[j]<-nrow(data3b)
+compnc[j]<-nrow(data3c)
+
+MIna[j]<-nrow(data2a)
+MInb[j]<-nrow(data2b)
+MInc[j]<-nrow(data2c)
+
+######################
+#Complete Data 0: Bandwith*0.1
+hsa<-rbdMI$bws[1]*1/10
+hsb<-rbdMI$bws[2]*1/10
+data110<-data1[(cut-hsa<=(data1$x1))&((data1$x1)<=cut+hsb),]
+comp<-data110$y1t-data110$y0t
+comp10[j]<-mean(comp)
+comp20[j]<-sd(comp)/sqrt(length(comp))
+compn0[j]<-nrow(data110)
+
+######################
+#Complete Data
+comp<-data11a$y1t-data11a$y0t
+comp1a[j]<-mean(comp)
+comp2a[j]<-sd(comp)/sqrt(length(comp))
+
+comp<-data11b$y1t-data11b$y0t
+comp1b[j]<-mean(comp)
+comp2b[j]<-sd(comp)/sqrt(length(comp))
+
+comp<-data11c$y1t-data11c$y0t
+comp1c[j]<-mean(comp)
+comp2c[j]<-sd(comp)/sqrt(length(comp))
+
+######################
+#Naive Estimator
+y1naive<-na.omit(data2a$y1)
+y0naive<-na.omit(data2a$y0)
+n1naive<-length(y1naive)
+n0naive<-length(y0naive)
+se1naive<-sd(y1naive)/sqrt(n1naive)
+se0naive<-sd(y0naive)/sqrt(n0naive)
+numnaive<-(se1naive+se0naive)^2
+denomnaive<-(se1naive^2)/(n1naive-1)+(se0naive^2)/(n0naive-1)
+dfna[j]<-numnaive/denomnaive
+naive1a[j]<-mean(y1naive)-mean(y0naive)
+naive2a[j]<-se1naive+se0naive
+
+y1naive<-na.omit(data2b$y1)
+y0naive<-na.omit(data2b$y0)
+n1naive<-length(y1naive)
+n0naive<-length(y0naive)
+se1naive<-sd(y1naive)/sqrt(n1naive)
+se0naive<-sd(y0naive)/sqrt(n0naive)
+numnaive<-(se1naive+se0naive)^2
+denomnaive<-(se1naive^2)/(n1naive-1)+(se0naive^2)/(n0naive-1)
+dfnb[j]<-numnaive/denomnaive
+naive1b[j]<-mean(y1naive)-mean(y0naive)
+naive2b[j]<-se1naive+se0naive
+
+y1naive<-na.omit(data2c$y1)
+y0naive<-na.omit(data2c$y0)
+n1naive<-length(y1naive)
+n0naive<-length(y0naive)
+se1naive<-sd(y1naive)/sqrt(n1naive)
+se0naive<-sd(y0naive)/sqrt(n0naive)
+numnaive<-(se1naive+se0naive)^2
+denomnaive<-(se1naive^2)/(n1naive-1)+(se0naive^2)/(n0naive-1)
+dfnc[j]<-numnaive/denomnaive
+naive1c[j]<-mean(y1naive)-mean(y0naive)
+naive2c[j]<-se1naive+se0naive
+
+######################
+#MI: Amelia
+
+a.out<-amelia(data2a,p2s=0,m=M)
+tauhata<-matrix(NA,MIna[j],M1)
+tauhat0<-matrix(NA,MIna[j],M1)
+tauhat1<-matrix(NA,MIna[j],M1)
+nMIa1<-NULL
+nMIa2<-NULL
+for(i in 1:M1){
+ tauhata[,i]<-a.out$imputations[[i]]$y1-a.out$imputations[[i]]$y0
+ nMIa1[i]<-mean(tauhata[,i])
+ nMIa2[i]<-var(tauhata[,i])/length(tauhata[,i])
+}
+mia1a[j]<-mean(nMIa1)
+wmia<-mean(nMIa2)
+bmia<-(1/(M1-1))*sum((nMIa1-mean(nMIa1))^2)
+tmia<-wmia+(1+1/M1)*bmia
+mia2a[j]<-sqrt(tmia)
+
+a.out<-amelia(data2b,p2s=0,m=M)
+tauhata<-matrix(NA,MInb[j],M1)
+tauhat0<-matrix(NA,MInb[j],M1)
+tauhat1<-matrix(NA,MInb[j],M1)
+nMIa1<-NULL
+nMIa2<-NULL
+for(i in 1:M1){
+ tauhata[,i]<-a.out$imputations[[i]]$y1-a.out$imputations[[i]]$y0
+ nMIa1[i]<-mean(tauhata[,i])
+ nMIa2[i]<-var(tauhata[,i])/length(tauhata[,i])
+}
+mia1b[j]<-mean(nMIa1)
+wmia<-mean(nMIa2)
+bmia<-(1/(M1-1))*sum((nMIa1-mean(nMIa1))^2)
+tmia<-wmia+(1+1/M1)*bmia
+mia2b[j]<-sqrt(tmia)
+
+a.out<-amelia(data2c,p2s=0,m=M)
+tauhata<-matrix(NA,MInc[j],M1)
+tauhat0<-matrix(NA,MInc[j],M1)
+tauhat1<-matrix(NA,MInc[j],M1)
+nMIa1<-NULL
+nMIa2<-NULL
+for(i in 1:M1){
+ tauhata[,i]<-a.out$imputations[[i]]$y1-a.out$imputations[[i]]$y0
+ nMIa1[i]<-mean(tauhata[,i])
+ nMIa2[i]<-var(tauhata[,i])/length(tauhata[,i])
+}
+mia1c[j]<-mean(nMIa1)
+wmia<-mean(nMIa2)
+bmia<-(1/(M1-1))*sum((nMIa1-mean(nMIa1))^2)
+tmia<-wmia+(1+1/M1)*bmia
+mia2c[j]<-sqrt(tmia)
+
+######################
+#Regression Discontinuity Design 2: correct cutoff
+modelRDD1<-rdrobust(data3$y3, data3$x1, c=cut,p=1,q=2,all=TRUE,h=c(hMI1a,hMI1b))
+rdd1a[j]<-modelRDD1$Estimate[1]
+rdd2a[j]<-modelRDD1$Estimate[3]
+
+modelRDD1<-rdrobust(data3$y3, data3$x1, c=cut,p=1,q=2,all=TRUE,h=c(hMI2a,hMI2b))
+rdd1b[j]<-modelRDD1$Estimate[1]
+rdd2b[j]<-modelRDD1$Estimate[3]
+
+modelRDD1<-rdrobust(data3$y3, data3$x1, c=cut,p=1,q=2,all=TRUE,h=c(hMI3a,hMI3b))
+rdd1c[j]<-modelRDD1$Estimate[1]
+rdd2c[j]<-modelRDD1$Estimate[3]
+
+############################################
+}
+#simulation done
+
+############################################
+#Coverage of 95% CI
+
+compC0<-qt(0.975,compn0)
+compCa<-qt(0.975,compna)
+compCb<-qt(0.975,compnb)
+compCc<-qt(0.975,compnc)
+
+compCI10<-comp10+compC0*comp20
+compCI20<-comp10-compC0*comp20
+compci0<-NULL
+for(i in 1:s){
+ if((compCI10[i]>late)==TRUE&(compCI20[i]<late)==TRUE){
+ compci0[i]<-1
+ }else{
+ compci0[i]<-0
+ }
+}
+
+compCI1a<-comp1a+compCa*comp2a
+compCI2a<-comp1a-compCa*comp2a
+compcia<-NULL
+for(i in 1:s){
+ if((compCI1a[i]>late)==TRUE&(compCI2a[i]<late)==TRUE){
+ compcia[i]<-1
+ }else{
+ compcia[i]<-0
+ }
+}
+
+compCI1b<-comp1b+compCb*comp2b
+compCI2b<-comp1b-compCb*comp2b
+compcib<-NULL
+for(i in 1:s){
+ if((compCI1b[i]>late)==TRUE&(compCI2b[i]<late)==TRUE){
+ compcib[i]<-1
+ }else{
+ compcib[i]<-0
+ }
+}
+
+compCI1c<-comp1c+compCc*comp2c
+compCI2c<-comp1c-compCc*comp2c
+compcic<-NULL
+for(i in 1:s){
+ if((compCI1c[i]>late)==TRUE&(compCI2c[i]<late)==TRUE){
+ compcic[i]<-1
+ }else{
+ compcic[i]<-0
+ }
+}
+
+naiveCa<-qt(0.975,dfna)
+naiveCb<-qt(0.975,dfnb)
+naiveCc<-qt(0.975,dfnc)
+
+naiveCI1a<-naive1a+naiveCa*naive2a
+naiveCI2a<-naive1a-naiveCa*naive2a
+naivecia<-NULL
+for(i in 1:s){
+ if((naiveCI1a[i]>late)==TRUE&(naiveCI2a[i]<late)==TRUE){
+ naivecia[i]<-1
+ }else{
+ naivecia[i]<-0
+ }
+}
+
+naiveCI1b<-naive1b+naiveCb*naive2b
+naiveCI2b<-naive1b-naiveCb*naive2b
+naivecib<-NULL
+for(i in 1:s){
+ if((naiveCI1b[i]>late)==TRUE&(naiveCI2b[i]<late)==TRUE){
+ naivecib[i]<-1
+ }else{
+ naivecib[i]<-0
+ }
+}
+
+naiveCI1c<-naive1c+naiveCc*naive2c
+naiveCI2c<-naive1c-naiveCc*naive2c
+naivecic<-NULL
+for(i in 1:s){
+ if((naiveCI1c[i]>late)==TRUE&(naiveCI2c[i]<late)==TRUE){
+ naivecic[i]<-1
+ }else{
+ naivecic[i]<-0
+ }
+}
+
+impCa<-qt(0.975,MIna)
+impCb<-qt(0.975,MInb)
+impCc<-qt(0.975,MInc)
+
+miaCI1a<-mia1a+impCa*mia2a
+miaCI2a<-mia1a-impCa*mia2a
+miacia<-NULL
+for(i in 1:s){
+ if((miaCI1a[i]>late)==TRUE&(miaCI2a[i]<late)==TRUE){
+ miacia[i]<-1
+ }else{
+ miacia[i]<-0
+ }
+}
+
+miaCI1b<-mia1b+impCb*mia2b
+miaCI2b<-mia1b-impCb*mia2b
+miacib<-NULL
+for(i in 1:s){
+ if((miaCI1b[i]>late)==TRUE&(miaCI2b[i]<late)==TRUE){
+ miacib[i]<-1
+ }else{
+ miacib[i]<-0
+ }
+}
+
+miaCI1c<-mia1c+impCc*mia2c
+miaCI2c<-mia1c-impCc*mia2c
+miacic<-NULL
+for(i in 1:s){
+ if((miaCI1c[i]>late)==TRUE&(miaCI2c[i]<late)==TRUE){
+ miacic[i]<-1
+ }else{
+ miacic[i]<-0
+ }
+}
+
+rddCI1a<-rdd1a+compCa*rdd2a
+rddCI2a<-rdd1a-compCa*rdd2a
+rddcia<-NULL
+for(i in 1:s){
+ if((rddCI1a[i]>late)==TRUE&(rddCI2a[i]<late)==TRUE){
+ rddcia[i]<-1
+ }else{
+ rddcia[i]<-0
+ }
+}
+
+rddCI1b<-rdd1b+compCb*rdd2b
+rddCI2b<-rdd1b-compCb*rdd2b
+rddcib<-NULL
+for(i in 1:s){
+ if((rddCI1b[i]>late)==TRUE&(rddCI2b[i]<late)==TRUE){
+ rddcib[i]<-1
+ }else{
+ rddcib[i]<-0
+ }
+}
+
+rddCI1c<-rdd1c+compCc*rdd2c
+rddCI2c<-rdd1c-compCc*rdd2c
+rddcic<-NULL
+for(i in 1:s){
+ if((rddCI1c[i]>late)==TRUE&(rddCI2c[i]<late)==TRUE){
+ rddcic[i]<-1
+ }else{
+ rddcic[i]<-0
+ }
+}
+
+######################
+#Results
+#Bias
+Bias<-matrix(NA,methods,1)
+
+Bias[1,1]<-mean(comp1a)-late
+Bias[2,1]<-mean(naive1a)-late
+Bias[3,1]<-mean(mia1a)-late
+Bias[4,1]<-mean(rdd1a)-late
+Bias[5,1]<-mean(comp1b)-late
+Bias[6,1]<-mean(naive1b)-late
+Bias[7,1]<-mean(mia1b)-late
+Bias[8,1]<-mean(rdd1b)-late
+Bias[9,1]<-mean(comp1c)-late
+Bias[10,1]<-mean(naive1c)-late
+Bias[11,1]<-mean(mia1c)-late
+Bias[12,1]<-mean(rdd1c)-late
+Bias[13,1]<-mean(comp10)-late
+
+#RMSE
+rmse<-matrix(NA,methods,1)
+
+rmse[1,1]<-sqrt(sum((comp1a-late)^2)/s)
+rmse[2,1]<-sqrt(sum((naive1a-late)^2)/s)
+rmse[3,1]<-sqrt(sum((mia1a-late)^2)/s)
+rmse[4,1]<-sqrt(sum((rdd1a-late)^2)/s)
+rmse[5,1]<-sqrt(sum((comp1b-late)^2)/s)
+rmse[6,1]<-sqrt(sum((naive1b-late)^2)/s)
+rmse[7,1]<-sqrt(sum((mia1b-late)^2)/s)
+rmse[8,1]<-sqrt(sum((rdd1b-late)^2)/s)
+rmse[9,1]<-sqrt(sum((comp1c-late)^2)/s)
+rmse[10,1]<-sqrt(sum((naive1c-late)^2)/s)
+rmse[11,1]<-sqrt(sum((mia1c-late)^2)/s)
+rmse[12,1]<-sqrt(sum((rdd1c-late)^2)/s)
+rmse[13,1]<-sqrt(sum((comp10-late)^2)/s)
+
+#Coverage of 95% CI
+cover<-matrix(NA,methods,1)
+
+cover[1,1]<-mean(compcia)*100
+cover[2,1]<-mean(naivecia)*100
+cover[3,1]<-mean(miacia)*100
+cover[4,1]<-mean(rddcia)*100
+cover[5,1]<-mean(compcib)*100
+cover[6,1]<-mean(naivecib)*100
+cover[7,1]<-mean(miacib)*100
+cover[8,1]<-mean(rddcib)*100
+cover[9,1]<-mean(compcic)*100
+cover[10,1]<-mean(naivecic)*100
+cover[11,1]<-mean(miacic)*100
+cover[12,1]<-mean(rddcic)*100
+cover[13,1]<-mean(compci0)*100
+
+#Average length of 95% CI
+cilength<-matrix(NA,methods,1)
+
+cilength[1,1]<-mean(compCI1a-compCI2a)
+cilength[2,1]<-mean(naiveCI1a-naiveCI2a)
+cilength[3,1]<-mean(miaCI1a-miaCI2a)
+cilength[4,1]<-mean(rddCI1a-rddCI2a)
+cilength[5,1]<-mean(compCI1b-compCI2b)
+cilength[6,1]<-mean(naiveCI1b-naiveCI2b)
+cilength[7,1]<-mean(miaCI1b-miaCI2b)
+cilength[8,1]<-mean(rddCI1b-rddCI2b)
+cilength[9,1]<-mean(compCI1c-compCI2c)
+cilength[10,1]<-mean(naiveCI1c-naiveCI2c)
+cilength[11,1]<-mean(miaCI1c-miaCI2c)
+cilength[12,1]<-mean(rddCI1c-rddCI2c)
+cilength[13,1]<-mean(compCI10-compCI20)
+
+#Average subsample size
+subsamplen<-matrix(NA,methods,1)
+
+subsamplen[1,1]<-mean(compna)
+subsamplen[2,1]<-mean(dfna)
+subsamplen[3,1]<-mean(MIna)
+subsamplen[4,1]<-mean(compna)
+subsamplen[5,1]<-mean(compnb)
+subsamplen[6,1]<-mean(dfnb)
+subsamplen[7,1]<-mean(MInb)
+subsamplen[8,1]<-mean(compnb)
+subsamplen[9,1]<-mean(compnc)
+subsamplen[10,1]<-mean(dfnc)
+subsamplen[11,1]<-mean(MInc)
+subsamplen[12,1]<-mean(compnc)
+subsamplen[13,1]<-mean(compn0)
+
+############################
+rownames<-c("comp050","naive050","Amelia050","RDD050","comp100","naive100","Amelia100","RDD100","comp200","naive200","Amelia200","RDD200","comp010")
+Bias<-round(Bias,4)
+RMSE<-round(rmse,4)
+Coverage<-round(cover,4)
+CIlength<-round(cilength,4)
+SubSampleSize<-round(subsamplen,4)
+
+seedvalue1<-matrix(rep(seed,methods),methods,1)
+output1<-data.frame(rownames,Bias,RMSE,Coverage,CIlength,seedvalue1,SubSampleSize)
+
