@@ -1,1 +1,1 @@
-# replication
+This website offers R-codes to replicate the results reported in "Multiple Imputation Discontinuity Designs: Alternative to Regression Discontinuity Designs to Estimate the Local Average Treatment Effect at the Cutoff" that is currently under review. Please see "ReadMe.pdf" about how to replicate the results.
