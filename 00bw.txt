@@ -1,0 +1,13 @@
+n1<-6558
+M<-30
+M1<-M
+s<-5000
+
+bw<-"mserd"
+
+#bw<-"msesum"
+
+#bw<-"cerrd"
+
+#bw<-"cersum"
+
